@@ -1,13 +1,19 @@
 <template>
   <div>
-    <fieldset class="card-container">
-      <legend>Credit Card Information</legend>
+    <fieldset class="card-container" :class="{'shake' : animated}">
+      <legend>Credit Card Information{{inputAlert}}</legend>
       <div class="card-number">
-        <img :src="ccType ? require('../assets/' + ccType + '.png') : require('../assets/front.png')" alt="card">
-        <input v-if="inputAlert" type="text" :value="formatCardNumber.substr(15)" @input="handleChange" :class="ccType?'slide-fade-enter-active':''" name="card" id="card" pattern="[0-9]*" placeholder="xxxx xxxx xxxx xxxx" class="effect">
-        <input v-else type="text" :value="formatCardNumber" @input="handleChange" name="card" id="card" pattern="[0-9]*" placeholder="xxxx xxxx xxxx xxxx" class="effect">
-        <input v-if="inputAlert" :value="formatExpiration" @input="handleExpiration" placeholder="MM/YY"  maxlength="5" name="expiration" pattern="[0-9]*" type="text" class="card-expiration" id="expiration">
-        <input v-if="inputAlert" :value="ccv" @input="handleCvv" placeholder="CVV" @keypress="imageChange" maxlength="3" pattern="[0-9]*" type="text" class="card-cvv" id="card-cvv">
+        <transition name="flip">
+          <p v-bind:key="flipped" class="card">
+              <img v-if="flipped" :src="require('../assets/back.png')"  alt="card">
+              <img v-else  :src="ccType ? require('../assets/' + ccType + '.png') : require('../assets/front.png')"  alt="card">
+          </p>
+        </transition>
+        
+        <input v-if="inputAlert" type="text" :value="formatCardNumber.substr(15)" @input="handleChange" :class="ccType?'slide-fade-enter-active':''" @focus="focusAgain" name="card" id="card" pattern="[0-9]*" placeholder="xxxx xxxx xxxx xxxx" class="effect">
+        <input v-else type="text" :value="formatCardNumber" @input="handleChange" name="card" id="card" pattern="[0-9]*" placeholder="xxxx xxxx xxxx xxxx" :class="wrongNumberAlert?'warning-color':''" class="effect">
+        <input v-if="inputAlert" :value="formatExpiration" @input="handleExpiration" placeholder="MM/YY"  maxlength="5" name="expiration" pattern="[0-9]*" type="text"  id="expiration">
+        <input v-if="inputAlert" :value="ccv" @input="handleCvv" placeholder="CVV" @focus="imageChange" maxlength="3" pattern="[0-9]*" type="text" class="card-cvv" id="card-cvv">
         <input v-if="inputAlert" :value="zip" @input="handleZip" placeholder="ZIP" maxlength="5" pattern="[0-9]*" type="text" class="card-zip" id="card-zip">
       </div>
     </fieldset>
@@ -41,6 +47,12 @@ export default {
     wrongNumberAlert: false,
     successAlert: false,
     inputAlert: false,
+    
+    altText: 'click me',
+    animated: false,
+
+    error: false,
+    flipped: false,
   }),
   computed: {
     formatCardNumber() {
@@ -51,6 +63,9 @@ export default {
     },
   },
   methods: {
+    toggleCard() {
+      this.flipped = !this.flipped;
+    },
     cc_format(value) {
       let v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
       let matches = v.match(/\d{4,16}/g);
@@ -66,6 +81,14 @@ export default {
       } else {
           return value
       }
+    },
+
+    clickHandler() {
+      const self = this
+      self.animated = true
+      setTimeout(() => {
+        self.animated = false
+      }, 1000)
     },
 
     ce_format(item) {
@@ -84,6 +107,8 @@ export default {
       if(this.cardNumber.length == 19 && !this.getCreditCardType(this.cardNumber))
       {
         this.wrongNumberAlert = true
+
+        this.clickHandler()
       }
       if(this.cardNumber.length == 19 && this.getCreditCardType(this.cardNumber))
       {
@@ -105,6 +130,7 @@ export default {
       {
         this.getFocus("card-zip")
         console.log("this.ccv", this.ccv)
+         this.flipped = !this.flipped
       }
     },
     handleZip(e) {
@@ -130,7 +156,13 @@ export default {
       }
     },
     imageChange() {
-      this.ccType = "back"
+      this.flipped = !this.flipped
+      console.log("helosdfsdfsdfs")
+    },
+    focusAgain() {
+      console.log("hello")
+      this.inputAlert = false
+      this.flipped = false
     }
   }
 };
@@ -139,7 +171,7 @@ export default {
 .card-container {
   position: relative;
   display: flex;
-  width: 100%;
+  width: 1000px;
   flex-direction: column;
   margin: 5px 0;
 }
@@ -160,6 +192,16 @@ input[type="text"]:focus {
   font-size: 20px;
   background-color: white;
 } */
+
+.card {
+  display: block;
+  width: 60px;
+  margin: 0px;
+  position: relative;
+  will-change: transform;
+}
+  
+
 img {
   width: 60px;
   height: 30px;
@@ -179,4 +221,50 @@ input::placeholder {
   color: green
 }
 
+.warning-color {
+  color: red;
+}
+.shake {
+  animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+  transform: translate3d(0, 0, 0);
+}
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+.card-card {
+  background-color: transparent;
+  width: 300px;
+  height: 300px;
+}
+
+
+.flip-enter-active {
+    transition: all 0.4s ease;
+  }
+  
+  .flip-leave-active {
+    display: none;
+  }
+  
+  .flip-enter, .flip-leave {
+    transform: rotateY(180deg);
+    opacity: 0;
+  
+  }
+
+.card-revert {
+
+}
 </style>
